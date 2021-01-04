@@ -1,5 +1,3 @@
-//Using libraries from David Prentice
-//Special thanks to him
 
 // *** sensor libraries and variables:
 //SD
