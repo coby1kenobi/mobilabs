@@ -1,3 +1,5 @@
+//Using libraries by David Prentice
+//Special thanks to him
 
 // *** sensor libraries and variables:
 //SD
@@ -23,6 +25,8 @@ OneWire oneWire(temp_in);
 DallasTemperature sensors(&oneWire);
 
 //pH Meter
+#include "DFRobot_PH.h"
+
 #define ph_in A8
 int ph_5v = 42;
 float b; 
@@ -196,6 +200,10 @@ void setup() {
   pinMode(SD_5v, OUTPUT);
   digitalWrite(SD_5v, HIGH);
   delay(750);
+  if (EEPROM.read(4) == 255 && EEPROM.read(5) == 255) {
+    EEPROM.write(4, 0);
+    EEPROM.write(5, 0);
+  }
 
   home();
   page = 0;
@@ -242,7 +250,8 @@ void loop() {
   int startTime;
   // --- /text
 
-  
+    float batt = analogRead(A9);
+    Serial.println(batt);
     // --- button for dist
     dist_btn_on.initButton(&tft, 210, 77, 45, 45, BLACK, MBRED, WHITE, "", 1);
     dist_btn_off.initButton(&tft, 210, 77, 45, 45, BLACK, MBGREEN, WHITE, "", 1);
@@ -262,13 +271,13 @@ void loop() {
     if ((dist_pressed % 2) == 0) {
       dist_btn_on.drawButton();
       dist_on = false;
-      text(20, 80, 1, &FreeSans12pt7b, "off", WHITE);
+      //text(20, 80, 1, &FreeSans12pt7b, "off", WHITE);
       //Serial.println("dist: off");
     } else {
       dist_btn_off.drawButton();
       dist_on = true;
       get_dist();
-      printVal(20, 80, 1, &FreeSans12pt7b, dist, WHITE);
+      //printVal(20, 80, 1, &FreeSans12pt7b, dist, WHITE);
       //delay here maybe?
       Serial.println("dist: on");
     }
@@ -295,12 +304,12 @@ void loop() {
     if ((temp_pressed % 2) == 0) {
       temp_btn_on.drawButton();
       temp_on = false;
-      text(20, 194, 1, &FreeSans12pt7b, "off", WHITE);
+      //text(20, 194, 1, &FreeSans12pt7b, "off", WHITE);
     } else {
       temp_btn_off.drawButton(); //button to turn off. 
       temp_on = true;
       get_temp();
-      printVal(20, 194, 1, &FreeSans12pt7b, temp, WHITE);
+     // printVal(20, 194, 1, &FreeSans12pt7b, temp, WHITE);
     }
     //Serial.println(dist_pressed);
     // --- /button for temp
@@ -326,12 +335,12 @@ void loop() {
     if ((ph_pressed % 2) == 0) {
       ph_btn_on.drawButton(); //try adding false as a parameter
       ph_on = false;
-      text(20, 308, 1, &FreeSans12pt7b, "off", WHITE);
+      //text(20, 308, 1, &FreeSans12pt7b, "off", WHITE);
     } else {
       ph_btn_off.drawButton();
       ph_on = true;
       get_ph();
-      printVal(20, 308, 1, &FreeSans12pt7b, ph, WHITE);
+      //printVal(20, 308, 1, &FreeSans12pt7b, ph, WHITE);
     }
     // --- /button for pH
 
@@ -346,9 +355,13 @@ void loop() {
       sd_pressed++; //if int is odd => button was turned on. if odd, button is off
       Serial.println("sd_btn was pressed");
       if (sd_pressed % 2 != 0) {
+        fileName = "data";
+        fileNum = EEPROM.read(4);
         fileNum++;
+        fileName += fileNum;
+        fileName += ".txt";
         // FILE NAME CODE HERE *************************************************** DONT FORGET TO ADD ".txt"
-        EEPROM.write(0, fileNum);
+        EEPROM.write(4, fileNum);
         startTime = millis();
         dataString = "time(ms)";
         if (dist_on) dataString += ",distance(cm)";
@@ -413,10 +426,35 @@ void loop() {
     tft.fillRect(10, 45, 110, 60, BLACK);
     tft.fillRect(10, 159, 110, 60, BLACK);
     tft.fillRect(10, 273, 110, 60, BLACK);
-
+    //printing values
+    if (dist_on) {
+      printVal(20, 80, 1, &FreeSans12pt7b, dist, WHITE);
+    } else {
+       text(20, 80, 1, &FreeSans12pt7b, "off", WHITE);
+    }
+    if (temp_on) {
+      printVal(20, 194, 1, &FreeSans12pt7b, temp, WHITE);
+    } else {
+      text(20, 194, 1, &FreeSans12pt7b, "off", WHITE);
+    }
+    if (ph_on) {
+      printVal(20, 308, 1, &FreeSans12pt7b, ph, WHITE);
+    } else {
+      text(20, 308, 1, &FreeSans12pt7b, "off", WHITE);
+    }
+    
   }
 
-  //pH callibration page
+  //button will serialprint "CALPH" then serialread the string. then go to the ph callibration page. 
+
+  //pH CALLIBRATION PAGE
+  if (page == 1) {
+    //two buttons to callibrate with pH 4, 7. 
+    //also turn on temp
+    //use print then read
+    
+  }
+  
 }
 void get_dist() {
   //should I place a delay here?
