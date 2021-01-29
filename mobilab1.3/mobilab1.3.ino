@@ -5,9 +5,7 @@
 //SD
 #include <EEPROM.h> 
 #include <SPI.h>
-#include <SD.h>
-#include <SoftwareSerial.h>                           
-SoftwareSerial myserial(0, 1);               
+#include <SD.h>               
 
 int fileNum; 
 String fileString = "_";
@@ -79,6 +77,7 @@ TSPoint tp;
 #define MBBLUE tft.color565(43, 137, 240)
 #define MBGREEN tft.color565(4, 153, 56)
 #define MBRED tft.color565(153, 5, 0)
+#define MBGRAY tft.color565(193, 193, 193)
 
 //#define GRAY  0x2408        //un-highlighted cross-hair
 #define GRAY      BLUE     //idle cross-hair colour
@@ -181,7 +180,6 @@ void printVal(int x, int y, int sz, const GFXfont *f, float val, const char clr)
 void setup() {
   uint16_t ID = readID();
   Serial.begin(9600);
-  myserial.begin(9600);
   Serial.println(ID);
   sensors.begin();
   tft.begin(ID);
@@ -242,13 +240,18 @@ void loop() {
   
   if (page == 0) {
 
+  
   // --- text
   String dataString = ""; //String to be written to the SD card. 
   int startTime;
   // --- /text
 
     float batt = analogRead(A9);
-    //Serial.println(batt);
+    Serial.println(batt);
+    tft.drawRect(213, 4, 22, 12, MBGRAY);
+    float batt_perc = batt / 942;
+    tft.fillRect(214, 5, 20, 10, WHITE);
+    
     // --- button for dist
     dist_btn_on.initButton(&tft, 210, 77, 45, 45, BLACK, MBRED, WHITE, "", 1);
     dist_btn_off.initButton(&tft, 210, 77, 45, 45, BLACK, MBGREEN, WHITE, "", 1);
@@ -290,7 +293,7 @@ void loop() {
 
     if (temp_btn_on.justPressed()) {
       temp_pressed++; //if int is odd => sensor was turned on. if odd, sensor is off
-      Serial.println("temp_btn was pressed");
+      // Serial.println("temp_btn was pressed");
       if (temp_pressed % 2 != 0) {
         digitalWrite(temp_5v, HIGH);
       } else {
@@ -453,15 +456,6 @@ void loop() {
     
   }
 
-  //button will serialprint "CALPH" then serialread the string. then go to the ph callibration page. 
-
-  //pH CALIBRATION PAGE
-  //if (page == 1) {
-    //two buttons to calibrate with pH 4, 7. 
-    //also turn on temp
-    //use print then read
-    
-  //}
   
 }
 void get_dist() {
@@ -488,17 +482,15 @@ void get_ph() {
 }
 
 void calph() {
-  tft.fillRect(5, 273, 180, 80, BLACK);
+  tft.fillRect(5, 273, 180, 90, BLACK);
   tft.drawRect(20, 280, 160, 30, WHITE);
-  static unsigned long cal_start = millis();
-  //DFRph.calibration(ph_v,ph_temp);  // calibration process by Serail CMD 
-  //myserial.print("ENTERPH");
-  //myserial.print('\r');
-  DFRph.calibration(ph_v, ph_temp, "ENTERPH");
-  delay(500);
  
-  while (5000 > (millis()-cal_start) && (ph != 7.00 || ph != 4.00)) {
-    float ph_prog = (millis()-cal_start)/5000;
+  DFRph.calibration(ph_v, ph_temp, "ENTERPH");
+  text(20, 325, 1, &FreeSans9pt7b, "calibrating", WHITE);
+  delay(500);
+  float cal_start = millis();
+  while (8000 > (millis()-cal_start) && (ph != 7.00 || ph != 4.00)) {
+    float ph_prog = (millis()-cal_start)/8000;
     if (temp_on) {
       ph_temp = temp;
     } else {
@@ -509,12 +501,22 @@ void calph() {
   }
 
   DFRph.calibration(ph_v, ph_temp, "CALPH");
-  //myserial.print("CALPH");
-  //myserial.print('\r');
+  
   delay(500);
+  if ((ph_v > 1322) && (ph_v < 1678)) {
+    tft.fillRect(5, 273, 180, 90, BLACK);
+    text(20, 320, 1, &FreeSans9pt7b, "calibrated to pH 7", WHITE);
+    delay(500);
+  } else if ((ph_v > 1854) && (ph_v < 2210)) {
+    tft.fillRect(5, 273, 180, 90, BLACK);
+    text(20, 320, 1, &FreeSans9pt7b, "calibrated to pH 4", WHITE);
+    delay(500);
+  } else {
+    tft.fillRect(5, 273, 180, 90, BLACK);
+    text(20, 320, 1, &FreeSans9pt7b, "failed to calibrate.", WHITE); 
+    delay(500);
+  }
   DFRph.calibration(ph_v, ph_temp, "EXITPH");
-  //myserial.print("EXITPH");
-  //myserial.print('\r');
 
   digitalWrite(ph_5v, LOW);
   tft.fillRect(5, 273, 180, 80, BLACK);
