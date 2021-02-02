@@ -1,5 +1,4 @@
-//Using libraries by David Prentice
-//Special thanks to him
+//mobilabs
 
 // *** sensor libraries and variables:
 //SD
