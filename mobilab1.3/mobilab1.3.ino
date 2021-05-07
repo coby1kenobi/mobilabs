@@ -1,5 +1,3 @@
-//mobilabs
-
 // *** sensor libraries and variables:
 //SD
 #include <EEPROM.h> 
@@ -34,9 +32,9 @@ DFRobot_PH DFRph;
 
 //HC-SR04 sensor:
 #include <NewPing.h>
-int trig = 33; //dpin __
-int echo = 34; //dpin __
-int dist_5v = 32; //don't forget to pinmode, digital write high then low
+int trig = 33;
+int echo = 34; 
+int dist_5v = 32; 
 //grnd 
 NewPing sonar(trig, echo, 350); //350cm range but can go up to 400. 
 
@@ -54,10 +52,8 @@ MCUFRIEND_kbv tft;
 #include <Fonts/FreeSerif12pt7b.h>
 #include <FreeDefaultFonts.h>
 
-//#define USE_MEGA_8BIT_PROTOSHIELD
-//#define __AVR_ATmega2560__
 const int XP=28,XM=A2,YP=A1,YM=29; //240x400 ID=0x9327
-const int TS_LEFT=920,TS_RT=178,TS_TOP=958,TS_BOT=182;
+const int TS_LEFT=915,TS_RT=176,TS_TOP=961,TS_BOT=176;
 
 
 int page; //page number || 0 for home, 
@@ -77,10 +73,6 @@ TSPoint tp;
 #define MBGREEN tft.color565(4, 153, 56)
 #define MBRED tft.color565(153, 5, 0)
 #define MBGRAY tft.color565(193, 193, 193)
-
-//#define GRAY  0x2408        //un-highlighted cross-hair
-#define GRAY      BLUE     //idle cross-hair colour
-#define GRAY_DONE RED      //finished cross-hair
 
 #define MINPRESSURE 200
 #define MAXPRESSURE 1000
@@ -120,9 +112,7 @@ bool readTouch(void) {
         //count++;
         //delay(5);
     }
-    //else count = 0;
-    //if (count == 1) return pressed;
-    //else return false; 
+    
     return pressed;
 }
 
@@ -214,16 +204,20 @@ void home() {
   tft.drawFastHLine(0, 20, tft.width(), MBYELLOW);
   tft.fillRect(0, 0, tft.width(), 20, MBBLUE);
   text(10, 15, 1, &FreeSans9pt7b, "mobilab v1", WHITE);
+  //batt
+  tft.drawRect(213, 4, 22, 12, MBGRAY);
+  tft.fillRect(235, 8, 2, 4, MBGRAY);
+
 
   // --- DISTANCE
   tft.drawFastHLine(0, 134, tft.width(), MBYELLOW);
   text(10, 40, 1, &FreeSans9pt7b, "distance (cm)", WHITE);
-  
   // --- /DISTANCE
 
   // --- TEMPERATURE
   tft.drawFastHLine(0, 248, tft.width(), MBYELLOW);
   text(10, 154, 1, &FreeSans9pt7b, "temperature (*C)", WHITE);
+  // --- /TEMPERATURE
 
   // --- PH
   text(10, 268, 1, &FreeSans9pt7b, "pH", WHITE);
@@ -245,11 +239,11 @@ void loop() {
   int startTime;
   // --- /text
 
-    float batt = analogRead(A9);
-    Serial.println(batt);
-    tft.drawRect(213, 4, 22, 12, MBGRAY);
-    float batt_perc = batt / 942;
-    tft.fillRect(214, 5, 20, 10, WHITE);
+    float batt = analogRead(A10);
+    //Serial.println(batt);
+    float batt_perc = batt / 235.5;
+    if (batt <= 256 && batt >= 235) tft.fillRect(214, 5, 20, 10, MBGREEN);
+    else tft.fillRect(214, 5, batt_perc*20, 10, WHITE);
     
     // --- button for dist
     dist_btn_on.initButton(&tft, 210, 77, 45, 45, BLACK, MBRED, WHITE, "", 1);
@@ -260,14 +254,14 @@ void loop() {
     if (dist_btn_on.justPressed()) {
       dist_pressed++; //if int is odd => sensor was turned on. if odd, sensor is off
       //Serial.println("dist_btn was pressed");
-      if (dist_pressed % 2 != 0) {
+      if (1 & dist_pressed) {
         digitalWrite(dist_5v, HIGH);
       } else {
           digitalWrite(dist_5v, LOW);
       }
     } 
     
-    if ((dist_pressed % 2) == 0) {
+    if (!(1 & dist_pressed)) {
       dist_btn_on.drawButton();
       dist_on = false;
       //text(20, 80, 1, &FreeSans12pt7b, "off", WHITE);
@@ -277,7 +271,6 @@ void loop() {
       dist_on = true;
       get_dist();
       //printVal(20, 80, 1, &FreeSans12pt7b, dist, WHITE);
-      //delay here maybe?
       Serial.println("dist: on");
     }
     //Serial.println(dist_pressed);
@@ -293,14 +286,14 @@ void loop() {
     if (temp_btn_on.justPressed()) {
       temp_pressed++; //if int is odd => sensor was turned on. if odd, sensor is off
       // Serial.println("temp_btn was pressed");
-      if (temp_pressed % 2 != 0) {
+      if (1 & temp_pressed) {
         digitalWrite(temp_5v, HIGH);
       } else {
           digitalWrite(temp_5v, LOW);
       }
     } 
     
-    if ((temp_pressed % 2) == 0) {
+    if (!(1 & temp_pressed)) {
       temp_btn_on.drawButton();
       temp_on = false;
       //text(20, 194, 1, &FreeSans12pt7b, "off", WHITE);
@@ -324,19 +317,17 @@ void loop() {
     ph_cal.press(pressed && ph_cal.contains(pixel_x, pixel_y));
 
     if (ph_btn_on.isPressed()) {
-      ph_pressed++; //if int is odd => sensor was turned on. if odd, sensor is off
-      //Serial.println("ph_btn was pressed");
-      if (ph_pressed % 2 != 0) {
+      ph_pressed++; 
+      if (1 & ph_pressed) {
         digitalWrite(ph_5v, HIGH);
       } else {
           digitalWrite(ph_5v, LOW);
       }
     } 
     
-    if ((ph_pressed % 2) == 0) {
-      ph_btn_on.drawButton(); //try adding false as a parameter
+    if (!(1 & ph_pressed) {
+      ph_btn_on.drawButton(); 
       ph_on = false;
-      //text(20, 308, 1, &FreeSans12pt7b, "off", WHITE);
       //go to pH callibration
       ph_cal.drawButton();
       if (ph_cal.isPressed()) {
@@ -364,13 +355,13 @@ void loop() {
       //get num files here
       sd_pressed++; //if int is odd => button was turned on. if odd, button is off
       Serial.println("sd_btn was pressed");
-      if (sd_pressed % 2 != 0) {
+      if (1 & sd_pressed) {
         fileName = "data";
         fileNum = EEPROM.read(4);
         fileNum++;
         fileName += fileNum;
         fileName += ".txt";
-        // FILE NAME CODE HERE *************************************************** DONT FORGET TO ADD ".txt"
+        // FILE NAME CODE HERE: 
         EEPROM.write(4, fileNum);
         startTime = millis();
         dataString = "time(ms)";
@@ -390,15 +381,14 @@ void loop() {
         if (dataFile) {
           dataFile.println(dataString);
           dataFile.close();
-          // print to the serial port too:
-          Serial.println(dataString);
+         
         }
          
       }
      }
     
-    if ((sd_pressed % 2) == 0) {
-      sd_btn_on.drawButton(); //try adding false as a parameter
+    if (!(1 & sd_pressed)) {
+      sd_btn_on.drawButton(); 
       text(45, 381, 1, &FreeSans9pt7b, "start recording", WHITE);
       sd_on = false;
     } else {
@@ -431,7 +421,6 @@ void loop() {
       
     }
     // --- /button for SD
-    //delay(250);
     //reseting values, basically just erasing
     tft.fillRect(10, 45, 110, 60, BLACK);
     tft.fillRect(10, 159, 110, 60, BLACK);
@@ -458,7 +447,6 @@ void loop() {
   
 }
 void get_dist() {
-  //should I place a delay here?
   dist = sonar.ping_cm();
 }
 
@@ -475,9 +463,6 @@ void get_ph() {
       ph_temp = 25.0;
     }
   ph = DFRph.readPH(ph_v, ph_temp);
-  //DFRph.calibration(ph_v,ph_temp);  // calibration process by Serail CMD
-
-  
 }
 
 void calph() {
@@ -519,6 +504,6 @@ void calph() {
 
   digitalWrite(ph_5v, LOW);
   tft.fillRect(5, 273, 180, 80, BLACK);
-
-  
 }
+
+//END
